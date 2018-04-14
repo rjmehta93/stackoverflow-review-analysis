@@ -1,0 +1,64 @@
+from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
+from sklearn.naive_bayes import MultinomialNB
+# import method for split train/test data set
+from sklearn.model_selection import train_test_split
+# import method to calculate metrics
+from sklearn.metrics import classification_report
+from sklearn.preprocessing import MultiLabelBinarizer
+import numpy as np
+from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
+from sklearn.multiclass import OneVsRestClassifier
+
+
+
+data = pd.read_csv("so-reviews.csv", header = 0)
+tags = data.iloc[:,9:10]
+ques = data.iloc[:,1:2]
+tags = tags.dropna()
+ques = ques.dropna()
+
+tags['subtags'] = tags['subtags'].astype(str).str.replace('[', '')
+tags['subtags'] = tags['subtags'].astype(str).str.replace(']', '')
+tags['subtags'] = tags['subtags'].astype(str).str.replace("'", '')
+
+ques = ques.values.tolist()
+tags = tags.values.tolist()
+quess=[]
+quess_tags=[]
+for i in range(len(ques)):
+    quess.append(' '.join(ques[i]).lower())
+    quess_tags.append(' '.join(tags[i]).lower())
+
+mlb = MultiLabelBinarizer()
+
+Y=mlb.fit_transform(tags)
+# check size of indicator matrix
+Y.shape
+# check classes
+mlb.classes_
+
+# check # of samples in each class
+np.sum(Y, axis=0)
+
+
+X_train, X_test, Y_train, Y_test = train_test_split(\
+                quess, Y, test_size=0.3, shuffle=True, random_state=0)
+
+classifier = Pipeline([
+    ('tfidf', TfidfVectorizer(stop_words="english", min_df=2)),
+    ('clf', OneVsRestClassifier(LinearSVC()))])
+    
+classifier.fit(X_train, Y_train)
+predicted = classifier.predict(X_test)
+result_pred = mlb.inverse_transform(predicted)
+result_y = mlb.inverse_transform(Y_test)
+
+predicted.shape
+predicted[0:2]
+Y_test[0:2]
+classifier.inverse_transform(predicted)
+print(classification_report(Y_test, predicted, target_names=mlb.classes_))
+
+
