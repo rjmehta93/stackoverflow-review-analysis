@@ -1,0 +1,90 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 18 19:05:04 2018
+
+@author: rajme
+"""
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
+from sklearn.naive_bayes import MultinomialNB
+# import method for split train/test data set
+from sklearn.model_selection import train_test_split
+# import method to calculate metrics
+from sklearn.metrics import classification_report
+from sklearn.preprocessing import MultiLabelBinarizer
+import numpy as np
+from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn import preprocessing
+from sklearn.metrics import accuracy_score
+from skmultilearn.problem_transform import LabelPowerset
+from sklearn.naive_bayes import GaussianNB
+
+
+
+data = pd.read_csv("so-reviews.csv", header = 0)
+tags = data.iloc[:,9:10]
+ques = data.iloc[:,1:2]
+tags = tags.dropna()
+ques = ques.dropna()
+
+tags['subtags'] = tags['subtags'].astype(str).str.replace('[', '')
+tags['subtags'] = tags['subtags'].astype(str).str.replace(']', '')
+tags['subtags'] = tags['subtags'].astype(str).str.replace("'", '')
+
+ques = ques.values.tolist()
+tags = tags.values.tolist()
+quess=[]
+quess_tags=[]
+for i in range(len(ques)):
+    quess.append(' '.join(ques[i]).lower())
+    quess_tags.append(' '.join(tags[i]).lower())
+
+#------------------------------------------------------------------------------
+    #LabelEncoder
+mlb = preprocessing.MultiLabelBinarizer()
+
+Y=mlb.fit_transform(tags)
+le = preprocessing.LabelEncoder()
+y = le.fit_transform(tags)
+
+
+# check size of indicator matrix
+Y.shape
+
+
+X_train, X_test, Y_train, Y_test = train_test_split(quess, y, test_size=0.15, shuffle=True, random_state=0)
+classifier = Pipeline([('tfidf', TfidfVectorizer(min_df=5)),('clf', OneVsRestClassifier(LinearSVC()))])
+classifier.fit(X_train, Y_train)
+predicted = classifier.predict(X_test)
+result_pred = le.inverse_transform(predicted)
+result_y = le.inverse_transform(Y_test)
+
+print(classification_report(Y_test, predicted, target_names=mlb.classes_))
+accuracy_score(Y_test,predicted)
+
+#------------------------------------------------------------------------------
+#LabelPowerSet
+
+mlb = preprocessing.MultiLabelBinarizer()
+
+Y=mlb.fit_transform(tags)
+le = preprocessing.LabelEncoder()
+y = le.fit_transform(tags)
+
+
+# check size of indicator matrix
+Y.shape
+
+
+X_train, X_test, Y_train, Y_test = train_test_split(quess, y, test_size=0.15, shuffle=True, random_state=0)
+classifier = Pipeline([('tfidf', TfidfVectorizer(min_df=5)),('clf', OneVsRestClassifier(LinearSVC()))])
+classifier.fit(X_train, Y_train)
+predicted = classifier.predict(X_test)
+result_pred = le.inverse_transform(predicted)
+result_y = le.inverse_transform(Y_test)
+
+print(classification_report(Y_test, predicted, target_names=mlb.classes_))
+accuracy_score(Y_test,predicted)
